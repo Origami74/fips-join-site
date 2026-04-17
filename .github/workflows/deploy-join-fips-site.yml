@@ -25,10 +25,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
-    defaults:
-      run:
-        working-directory: tmp/join-fips-site
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -38,7 +34,6 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
-          cache-dependency-path: tmp/join-fips-site/package-lock.json
 
       - name: Clean and install dependencies
         run: |
@@ -58,7 +53,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           # Upload dist directory
-          path: "./tmp/join-fips-site/dist"
+          path: "./dist"
 
       - name: Deploy to GitHub Pages
         id: deployment
