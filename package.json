@@ -1,0 +1,21 @@
+{
+  "name": "join-fips-site",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "applesauce-core": "^2.3.0",
+    "applesauce-relay": "^2.3.0",
+    "rxjs": "^7.8.1",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "vite": "^6.0.7"
+  }
+}

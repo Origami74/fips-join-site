@@ -1,0 +1,195 @@
+/* Color + typography tokens match fips.network (src: /assets/app-*.css). */
+:root {
+  --bg-page: #0d1117;
+  --bg-surface: #151525;
+  --bg-surface-alt: #151520;
+
+  --text-primary: #e0e0e0;
+  --text-secondary: #909090;
+  --text-muted: #606080;
+
+  --border-subtle: #404060;
+  --border-medium: #505070;
+
+  --color-app: #1a3a2a;
+  --color-app-border: #40a060;
+  --color-fsp: #2a2040;
+  --color-fsp-border: #8060c0;
+  --color-fmp: #2e3a5e;
+  --color-fmp-border: #5080c0;
+  --color-transport: #2a1a1a;
+  --color-transport-border: #c06040;
+  --accent-gold: #d0a040;
+
+  --font-mono: "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
+
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 2rem;
+  --space-xl: 4rem;
+
+  --content-wide-max-width: 1200px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code,
+kbd,
+pre,
+.mono {
+  font-family: var(--font-mono);
+}
+
+button {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  background: var(--color-app-border);
+  color: #0d1a11;
+  border: 1px solid var(--color-app-border);
+  border-radius: 5px;
+  padding: 9px 18px;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+button:hover:not(:disabled) {
+  background: #4ebb70;
+  border-color: #4ebb70;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border-subtle);
+}
+button.secondary:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--border-medium);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+input,
+textarea {
+  background: var(--bg-surface-alt);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  padding: 8px 10px;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+input:focus,
+textarea:focus {
+  border-color: var(--border-medium);
+}
+
+textarea {
+  width: 100%;
+  min-height: 88px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+code {
+  background: var(--bg-surface-alt);
+  border: 1px solid var(--border-subtle);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 0.85em;
+  color: var(--text-primary);
+}
+
+a {
+  color: var(--color-app-border);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* Reusable bits */
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-app-border);
+  box-shadow: 0 0 8px var(--color-app-border);
+}
+
+.pill {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface-alt);
+  color: var(--text-secondary);
+}
+
+.tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--bg-surface-alt);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  margin: 2px 4px 2px 0;
+}
+.tag.accent-green {
+  color: var(--color-app-border);
+  border-color: var(--color-app-border);
+  background: rgba(64, 160, 96, 0.08);
+}
+.tag.accent-red {
+  color: var(--color-transport-border);
+  border-color: var(--color-transport-border);
+  background: rgba(192, 96, 64, 0.08);
+}
+.tag.accent-purple {
+  color: var(--color-fsp-border);
+  border-color: var(--color-fsp-border);
+  background: rgba(128, 96, 192, 0.08);
+}
