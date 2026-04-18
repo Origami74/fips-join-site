@@ -179,8 +179,11 @@ onBeforeUnmount(stop);
   <header class="site-header">
     <div class="container">
       <a class="logo" href="https://fips.network" aria-label="FIPS home">
-        <span class="logo-text">FIPS</span>
-        <span class="logo-sub">fips.network</span>
+        <img src="/favicon.ico" alt="" class="logo-icon" aria-hidden="true" width="24" height="24" />
+        <span class="logo-words">
+          <span class="logo-text">FIPS</span>
+          <span class="logo-sub">fips.network</span>
+        </span>
       </a>
       <nav class="main-nav">
         <a href="https://fips.network/#what-it-does">What It Does</a>
@@ -415,10 +418,21 @@ onBeforeUnmount(stop);
 }
 .logo {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
   line-height: 1;
   color: var(--text-primary);
   text-decoration: none;
+}
+.logo-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+.logo-words {
+  display: flex;
+  flex-direction: column;
 }
 .logo-text {
   font-family: var(--font-mono);
