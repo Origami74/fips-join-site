@@ -66,6 +66,22 @@ function isUdpNat(endpoint) {
   );
 }
 
+// Tor onion v3 addresses are 56 base32 chars + ".onion" + optional ":port".
+// Showing the whole thing in the endpoint column blows out the row width;
+// shorten the hash but leave the port intact.
+function shortAddr(addr) {
+  const s = String(addr);
+  const onion = s.match(/^([a-z2-7]{8,})\.onion(.*)$/i);
+  if (onion) {
+    const hash = onion[1];
+    const tail = onion[2];
+    if (hash.length > 14) {
+      return `${hash.slice(0, 6)}…${hash.slice(-4)}.onion${tail}`;
+    }
+  }
+  return s;
+}
+
 const rawJson = computed(() => JSON.stringify(props.event, null, 2));
 </script>
 
@@ -88,7 +104,8 @@ const rawJson = computed(() => JSON.stringify(props.event, null, 2));
           :key="`${e.transport}:${e.addr}`"
           class="tag"
           :class="{ 'accent-green': isUdpNat(e) }"
-          >{{ e.transport }}:{{ e.addr }}</span
+          :title="`${e.transport}:${e.addr}`"
+          >{{ e.transport }}:{{ shortAddr(e.addr) }}</span
         >
       </template>
       <span v-else class="tag muted-tag">none</span>
@@ -153,7 +170,7 @@ const rawJson = computed(() => JSON.stringify(props.event, null, 2));
           </dd>
         </div>
         <div class="meta-row">
-          <dt>created</dt>
+          <dt>last seen</dt>
           <dd class="mono muted">
             {{ formatUnix(event.created_at) }}
             <span class="rel">({{ relativeTime(event.created_at) }})</span>

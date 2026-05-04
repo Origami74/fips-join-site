@@ -2,19 +2,19 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { RelayPool, onlyEvents } from "applesauce-relay";
 import PeerCard from "./components/PeerCard.vue";
+import HeroBackgroundMesh from "./components/HeroBackgroundMesh.vue";
 
-const ADVERT_KIND = 30078;
+// Kind 37195 is FIPS's parameterized replaceable advert (digits spell FIPS:
+// 7=F, 1=I, 9=P, 5=S). Was previously 30078 (NIP-78) before the protocol moved
+// to a FIPS-specific kind.
+const ADVERT_KIND = 37195;
 const ADVERT_D = "fips-overlay-v1";
 
-// FIPS defaults from src/config/node.rs:374-378, plus a few popular public
-// relays that are likely to mirror the adverts.
+// FIPS in-tree defaults (src/config/node.rs::default_advert_relays).
 const DEFAULT_RELAYS = [
-  "wss://offchain.pub",
-  "wss://strfry.bitsbytom.com",
   "wss://relay.damus.io",
   "wss://nos.lol",
-  "wss://relay.primal.net",
-  "wss://relay.nostr.band",
+  "wss://offchain.pub",
 ];
 
 const relaysText = ref(DEFAULT_RELAYS.join("\n"));
@@ -66,8 +66,6 @@ const expiredCount = computed(() => {
 });
 
 const liveCount = computed(() => peers.value.size - expiredCount.value);
-
-const isScanning = computed(() => sub !== null);
 
 function tagValue(ev, name) {
   const t = ev.tags.find((x) => x[0] === name);
@@ -179,17 +177,23 @@ onBeforeUnmount(stop);
   <header class="site-header">
     <div class="container">
       <a class="logo" href="https://fips.network" aria-label="FIPS home">
-        <img src="/favicon.ico" alt="" class="logo-icon" aria-hidden="true" width="24" height="24" />
+        <img
+          src="/fips_logo.png"
+          alt=""
+          class="logo-icon"
+          aria-hidden="true"
+          width="28"
+          height="28"
+        />
         <span class="logo-words">
           <span class="logo-text">FIPS</span>
-          <span class="logo-sub">fips.network</span>
+          <span class="logo-sub">join.fips.network</span>
         </span>
       </a>
       <nav class="main-nav">
-        <a href="https://fips.network/#what-it-does">What It Does</a>
-        <a href="https://fips.network/#how-it-works">How It Works</a>
-        <a href="https://fips.network/#identity">Identity</a>
-        <a href="https://fips.network/#get-involved">Get Involved</a>
+        <a href="https://fips.network">Main</a>
+        <a href="https://learn.fips.network">Learn</a>
+        <a href="https://awesome.fips.network">Awesome</a>
       </nav>
       <div class="header-actions">
         <a
@@ -212,13 +216,12 @@ onBeforeUnmount(stop);
 
   <main>
     <section class="hero">
-      <div class="container">
-        <span class="eyebrow">peer discovery</span>
+      <HeroBackgroundMesh />
+      <div class="container hero-inner">
         <h1 class="hero-title">Join the mesh</h1>
         <p class="hero-tagline">
-          A browser-side lens on the FIPS mesh. Queries Nostr relays for overlay
-          adverts (kind <code>30078</code>, <code>d=fips-overlay-v1</code>) and
-          lists every node currently announcing itself.
+          Live FIPS nodes announcing themselves on Nostr.
+          Pick one below and add it to your peer list to start meshing.
         </p>
       </div>
     </section>
@@ -270,12 +273,6 @@ onBeforeUnmount(stop);
                 <polyline points="6 9 12 15 18 9" />
               </svg>
             </button>
-            <button :disabled="isScanning" @click="scan">
-              {{ isScanning ? "Scanning…" : "Scan" }}
-            </button>
-            <button :disabled="!isScanning" class="secondary" @click="stop">
-              Stop
-            </button>
           </div>
         </div>
 
@@ -284,10 +281,11 @@ onBeforeUnmount(stop);
             <div>
               <span class="eyebrow">relays</span>
               <p class="panel-hint">
-                FIPS nodes publish to <code>wss://offchain.pub</code> and
-                <code>wss://strfry.bitsbytom.com</code> by default. Adverts
-                carry a <code>~1 h</code> NIP-40 expiration — well-behaved
-                relays drop them afterward, so offline peers can be invisible.
+                FIPS nodes publish to <code>wss://relay.damus.io</code>,
+                <code>wss://nos.lol</code>, and
+                <code>wss://offchain.pub</code> by default. Adverts carry a
+                <code>~1 h</code> NIP-40 expiration — well-behaved relays drop
+                them afterward, so offline peers can be invisible.
               </p>
             </div>
             <button class="secondary tiny" @click="resetRelays">
@@ -337,6 +335,10 @@ onBeforeUnmount(stop);
               <span>show expired (offline) peers</span>
             </label>
           </div>
+
+          <div class="panel-apply">
+            <button @click="scan">Apply</button>
+          </div>
         </div>
 
         <div v-if="peerList.length === 0" class="empty">
@@ -358,7 +360,7 @@ onBeforeUnmount(stop);
                 <th class="col-endpoints">endpoints</th>
                 <th class="col-proto">protocol</th>
                 <th class="col-relays">relays</th>
-                <th class="col-time">created</th>
+                <th class="col-time">last seen</th>
                 <th class="col-expires">expires</th>
                 <th class="col-caret"></th>
               </tr>
@@ -384,7 +386,7 @@ onBeforeUnmount(stop);
     <div class="container">
       <div class="footer-brand">
         <span class="footer-logo">FIPS</span>
-        <span class="footer-domain">fips.network</span>
+        <span class="footer-domain">join.fips.network</span>
       </div>
       <div class="footer-note">
         No tracking. No analytics. No cookies. All queries run in your browser.
@@ -407,7 +409,7 @@ onBeforeUnmount(stop);
   position: sticky;
   top: 0;
   z-index: 10;
-  background: rgba(13, 17, 23, 0.92);
+  background: rgba(11, 15, 26, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
@@ -418,17 +420,19 @@ onBeforeUnmount(stop);
 }
 .logo {
   display: flex;
-  flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   line-height: 1;
   color: var(--text-primary);
+}
+.logo:hover {
   text-decoration: none;
 }
 .logo-icon {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
+  border-radius: 4px;
 }
 .logo-words {
   display: flex;
@@ -448,13 +452,14 @@ onBeforeUnmount(stop);
   font-size: 0.625rem;
   color: var(--text-muted);
   letter-spacing: 0.05em;
-  margin-top: 1px;
+  margin-top: 2px;
 }
 .main-nav {
   display: flex;
   gap: var(--space-lg);
   flex: 1;
   justify-content: center;
+  flex-wrap: wrap;
 }
 .main-nav a {
   font-family: var(--font-mono);
@@ -492,6 +497,12 @@ onBeforeUnmount(stop);
 /* Hero ------------------------------------------------------------------ */
 .hero {
   padding: calc(var(--space-xl) + var(--space-md)) 0 var(--space-xl);
+  position: relative;
+  overflow: hidden;
+}
+.hero-inner {
+  position: relative;
+  z-index: 1;
 }
 .hero-title {
   font-family: var(--font-mono);
@@ -601,6 +612,14 @@ button.tiny {
 }
 .toggles .muted {
   color: var(--text-muted);
+}
+
+.panel-apply {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: flex-end;
 }
 
 /* Results bar ----------------------------------------------------------- */
