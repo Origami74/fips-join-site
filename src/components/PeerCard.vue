@@ -1,9 +1,11 @@
 <script setup>
 import { computed, ref } from "vue";
+import { nip19 } from "nostr-tools";
 
 const props = defineProps({
   event: { type: Object, required: true },
   advert: { type: Object, default: null },
+  pin: { type: Object, default: null },
   nowSec: { type: Number, required: true },
 });
 
@@ -32,8 +34,19 @@ const signalRelays = computed(() => props.advert?.signalRelays || []);
 const stunServers = computed(() => props.advert?.stunServers || []);
 const hasUdpNat = computed(() => endpoints.value.some(isUdpNat));
 
-function shortPubkey(hex) {
-  return hex.slice(0, 10) + "…" + hex.slice(-6);
+function npubFor(hex) {
+  try {
+    return nip19.npubEncode(hex);
+  } catch (_) {
+    return hex;
+  }
+}
+
+function shortNpub(hex) {
+  const npub = npubFor(hex);
+  // npub1 prefix + 58 char body. Show prefix + first chunk + … + last chunk
+  // so the table column doesn't blow up.
+  return npub.length > 22 ? `${npub.slice(0, 12)}…${npub.slice(-6)}` : npub;
 }
 
 function formatUnix(ts) {
@@ -88,14 +101,30 @@ const rawJson = computed(() => JSON.stringify(props.event, null, 2));
 <template>
   <tr
     class="summary"
-    :class="{ 'is-expired': isExpired, 'is-open': expanded }"
+    :class="{
+      'is-expired': isExpired,
+      'is-open': expanded,
+      'is-pinned': !!pin,
+    }"
     @click="expanded = !expanded"
   >
     <td class="col-status">
-      <span class="status-dot" :class="{ offline: isExpired }" />
+      <span
+        v-if="pin"
+        class="pin-star"
+        title="Recommended node"
+        aria-label="pinned"
+        >★</span
+      >
+      <span v-else class="status-dot" :class="{ offline: isExpired }" />
     </td>
     <td class="col-pubkey">
-      <span class="short mono">{{ shortPubkey(event.pubkey) }}</span>
+      <span
+        class="short mono"
+        :class="{ 'pin-pill': !!pin }"
+        :title="npubFor(event.pubkey)"
+        >{{ shortNpub(event.pubkey) }}</span
+      >
     </td>
     <td class="col-endpoints">
       <template v-if="endpoints.length">
@@ -145,8 +174,12 @@ const rawJson = computed(() => JSON.stringify(props.event, null, 2));
     <td colspan="8">
       <dl class="meta">
         <div class="meta-row">
-          <dt>pubkey</dt>
-          <dd class="mono">{{ event.pubkey }}</dd>
+          <dt>npub</dt>
+          <dd class="mono">{{ npubFor(event.pubkey) }}</dd>
+        </div>
+        <div class="meta-row">
+          <dt>pubkey (hex)</dt>
+          <dd class="mono muted">{{ event.pubkey }}</dd>
         </div>
         <div v-if="hasUdpNat" class="meta-row">
           <dt>discovery</dt>
@@ -236,6 +269,27 @@ tr.summary td {
   font-size: 0.8125rem;
   font-weight: 500;
   color: var(--text-primary);
+}
+.pin-star {
+  display: inline-block;
+  color: var(--accent-gold, #f5b942);
+  font-size: 0.95rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 4px rgba(245, 185, 66, 0.55));
+}
+.pin-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(245, 185, 66, 0.14);
+  border: 1px solid rgba(245, 185, 66, 0.35);
+  color: var(--accent-gold, #f5b942);
+}
+tr.summary.is-pinned {
+  background: rgba(245, 185, 66, 0.04);
+}
+tr.summary.is-pinned:hover {
+  background: rgba(245, 185, 66, 0.08);
 }
 
 .col-endpoints {

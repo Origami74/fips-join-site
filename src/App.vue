@@ -1,8 +1,23 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { RelayPool, onlyEvents } from "applesauce-relay";
+import { nip19 } from "nostr-tools";
 import PeerCard from "./components/PeerCard.vue";
 import HeroBackgroundMesh from "./components/HeroBackgroundMesh.vue";
+import { PINNED } from "./pinned.js";
+
+// hex pubkey → { name } for fast lookup against incoming events.
+const PINNED_BY_HEX = new Map();
+for (const entry of PINNED) {
+  try {
+    const dec = nip19.decode(entry.npub);
+    if (dec.type === "npub") {
+      PINNED_BY_HEX.set(dec.data, { name: entry.name ?? null });
+    }
+  } catch (_) {
+    // Bad npub in pinned.js — skip rather than crash the whole list.
+  }
+}
 
 // Kind 37195 is FIPS's parameterized replaceable advert (digits spell FIPS:
 // 7=F, 1=I, 9=P, 5=S). Was previously 30078 (NIP-78) before the protocol moved
@@ -53,7 +68,14 @@ const peerList = computed(() => {
       if (!exp) return true;
       return Number(exp) >= nowSec.value;
     })
-    .sort((a, b) => b.event.created_at - a.event.created_at);
+    .map((p) => ({ ...p, pin: PINNED_BY_HEX.get(p.event.pubkey) ?? null }))
+    .sort((a, b) => {
+      // Pinned peers float to the top; within each group, newest first.
+      const pa = a.pin ? 1 : 0;
+      const pb = b.pin ? 1 : 0;
+      if (pa !== pb) return pb - pa;
+      return b.event.created_at - a.event.created_at;
+    });
 });
 
 const expiredCount = computed(() => {
@@ -232,7 +254,9 @@ onBeforeUnmount(stop);
              the "Scan" button so visitors land on live data immediately. -->
         <div class="bar">
           <div class="bar-left">
-            <span class="eyebrow">results</span>
+            <p class="legend">
+              <span class="legend-star">★</span> = recommended node
+            </p>
             <div class="stats">
               <span class="pill accent-green">
                 <span class="pill-k">live</span>
@@ -367,10 +391,11 @@ onBeforeUnmount(stop);
             </thead>
             <tbody>
               <PeerCard
-                v-for="{ event, advert } in peerList"
+                v-for="{ event, advert, pin } in peerList"
                 :key="event.pubkey"
                 :event="event"
                 :advert="advert"
+                :pin="pin"
                 :now-sec="nowSec"
               />
             </tbody>
@@ -688,6 +713,18 @@ button.tiny {
 }
 .stats .pill.accent-red .pill-v {
   color: var(--color-transport-border);
+}
+.legend {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+.legend-star {
+  color: var(--accent-gold, #f5b942);
+  font-size: 1.125rem;
+  margin-right: 6px;
 }
 
 /* Peer table ------------------------------------------------------------ */
