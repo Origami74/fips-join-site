@@ -70,10 +70,14 @@ const peerList = computed(() => {
     })
     .map((p) => ({ ...p, pin: PINNED_BY_HEX.get(p.event.pubkey) ?? null }))
     .sort((a, b) => {
-      // Pinned peers float to the top; within each group, newest first.
+      // Pinned peers float to the top, sorted alphabetically by name;
+      // unpinned peers follow, newest first.
       const pa = a.pin ? 1 : 0;
       const pb = b.pin ? 1 : 0;
       if (pa !== pb) return pb - pa;
+      if (a.pin && b.pin) {
+        return (a.pin.name || "").localeCompare(b.pin.name || "");
+      }
       return b.event.created_at - a.event.created_at;
     });
 });

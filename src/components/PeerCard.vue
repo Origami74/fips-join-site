@@ -10,6 +10,19 @@ const props = defineProps({
 });
 
 const expanded = ref(false);
+const copiedKey = ref(null);
+
+async function copyValue(key, value) {
+  try {
+    await navigator.clipboard.writeText(value);
+    copiedKey.value = key;
+    setTimeout(() => {
+      if (copiedKey.value === key) copiedKey.value = null;
+    }, 1200);
+  } catch (_) {
+    // Clipboard API can fail in non-secure contexts; silently ignore.
+  }
+}
 
 function tagValue(ev, name) {
   const t = ev.tags.find((x) => x[0] === name);
@@ -123,7 +136,7 @@ const rawJson = computed(() => JSON.stringify(props.event, null, 2));
         class="short mono"
         :class="{ 'pin-pill': !!pin }"
         :title="npubFor(event.pubkey)"
-        >{{ shortNpub(event.pubkey) }}</span
+        >{{ pin?.name || shortNpub(event.pubkey) }}</span
       >
     </td>
     <td class="col-endpoints">
@@ -175,11 +188,148 @@ const rawJson = computed(() => JSON.stringify(props.event, null, 2));
       <dl class="meta">
         <div class="meta-row">
           <dt>npub</dt>
-          <dd class="mono">{{ npubFor(event.pubkey) }}</dd>
+          <dd class="mono">
+            <span>{{ npubFor(event.pubkey) }}</span>
+            <button
+              type="button"
+              class="copy-btn"
+              :title="copiedKey === 'npub' ? 'copied' : 'copy npub'"
+              :aria-label="copiedKey === 'npub' ? 'copied' : 'copy npub'"
+              @click.stop="copyValue('npub', npubFor(event.pubkey))"
+            >
+              <svg
+                v-if="copiedKey !== 'npub'"
+                viewBox="0 0 24 24"
+                width="13"
+                height="13"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="9" y="9" width="11" height="11" rx="2" />
+                <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+              </svg>
+              <svg
+                v-else
+                viewBox="0 0 24 24"
+                width="13"
+                height="13"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="5 12 10 17 19 7" />
+              </svg>
+            </button>
+          </dd>
         </div>
         <div class="meta-row">
           <dt>pubkey (hex)</dt>
-          <dd class="mono muted">{{ event.pubkey }}</dd>
+          <dd class="mono muted">
+            <span>{{ event.pubkey }}</span>
+            <button
+              type="button"
+              class="copy-btn"
+              :title="copiedKey === 'hex' ? 'copied' : 'copy hex pubkey'"
+              :aria-label="copiedKey === 'hex' ? 'copied' : 'copy hex pubkey'"
+              @click.stop="copyValue('hex', event.pubkey)"
+            >
+              <svg
+                v-if="copiedKey !== 'hex'"
+                viewBox="0 0 24 24"
+                width="13"
+                height="13"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="9" y="9" width="11" height="11" rx="2" />
+                <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+              </svg>
+              <svg
+                v-else
+                viewBox="0 0 24 24"
+                width="13"
+                height="13"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="5 12 10 17 19 7" />
+              </svg>
+            </button>
+          </dd>
+        </div>
+        <div v-if="endpoints.length" class="meta-row">
+          <dt>endpoints</dt>
+          <dd>
+            <div
+              v-for="e in endpoints"
+              :key="`${e.transport}:${e.addr}`"
+              class="endpoint-row"
+            >
+              <span class="tag" :class="{ 'accent-green': isUdpNat(e) }"
+                >{{ e.transport }}:{{ e.addr }}</span
+              >
+              <button
+                v-if="!isUdpNat(e)"
+                type="button"
+                class="copy-btn"
+                :title="
+                  copiedKey === `ep:${e.transport}:${e.addr}`
+                    ? 'copied'
+                    : `copy ${e.transport}:${e.addr}`
+                "
+                :aria-label="
+                  copiedKey === `ep:${e.transport}:${e.addr}`
+                    ? 'copied'
+                    : `copy ${e.transport}:${e.addr}`
+                "
+                @click.stop="
+                  copyValue(
+                    `ep:${e.transport}:${e.addr}`,
+                    `${e.transport}:${e.addr}`,
+                  )
+                "
+              >
+                <svg
+                  v-if="copiedKey !== `ep:${e.transport}:${e.addr}`"
+                  viewBox="0 0 24 24"
+                  width="13"
+                  height="13"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <rect x="9" y="9" width="11" height="11" rx="2" />
+                  <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+                </svg>
+                <svg
+                  v-else
+                  viewBox="0 0 24 24"
+                  width="13"
+                  height="13"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="5 12 10 17 19 7" />
+                </svg>
+              </button>
+            </div>
+          </dd>
         </div>
         <div v-if="hasUdpNat" class="meta-row">
           <dt>discovery</dt>
@@ -362,6 +512,34 @@ tr.detail td {
 }
 .rel {
   color: var(--text-muted);
+}
+.endpoint-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.endpoint-row:last-child {
+  margin-bottom: 0;
+}
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  padding: 2px 5px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  vertical-align: middle;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.copy-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .raw {
