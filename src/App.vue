@@ -23,7 +23,30 @@ for (const entry of PINNED) {
 // 7=F, 1=I, 9=P, 5=S). Was previously 30078 (NIP-78) before the protocol moved
 // to a FIPS-specific kind.
 const ADVERT_KIND = 37195;
-const ADVERT_D = "fips-overlay-v1";
+
+// Each FIPS branch publishes its adverts under a distinct d-tag namespace so
+// wire-incompatible branches never try to mesh with each other. `master` runs
+// FMP-v0 under `fips-overlay-v1`; `next` runs the incompatible FMP-v1 under
+// `fips-overlay-v1-next` (see node.rs::default_app / nostr/types.rs::
+// ADVERT_IDENTIFIER). The tabs just swap which namespace we scan.
+const BRANCHES = [
+  {
+    id: "master",
+    label: "Stable",
+    hint: "master · FMP-v0",
+    d: "fips-overlay-v1",
+  },
+  {
+    id: "next",
+    label: "Next",
+    hint: "next · FMP-v1",
+    d: "fips-overlay-v1-next",
+  },
+];
+const activeBranch = ref("master");
+const advertD = computed(
+  () => BRANCHES.find((b) => b.id === activeBranch.value)?.d ?? BRANCHES[0].d,
+);
 
 // FIPS in-tree defaults (src/config/node.rs::default_advert_relays).
 const DEFAULT_RELAYS = [
@@ -112,7 +135,7 @@ function parseAdvert(ev) {
 
 function onEvent(ev) {
   if (!ev || ev.kind !== ADVERT_KIND) return;
-  if (tagValue(ev, "d") !== ADVERT_D) return;
+  if (tagValue(ev, "d") !== advertD.value) return;
   eventCount.value++;
   const existing = peers.value.get(ev.pubkey);
   if (existing && existing.event.created_at >= ev.created_at) return;
@@ -147,7 +170,7 @@ function scan() {
   if (!pool) pool = new RelayPool();
 
   const filter = { kinds: [ADVERT_KIND] };
-  if (useDTag.value) filter["#d"] = [ADVERT_D];
+  if (useDTag.value) filter["#d"] = [advertD.value];
   if (protocolFilter.value.trim()) {
     filter["#protocol"] = [protocolFilter.value.trim()];
   }
@@ -179,6 +202,12 @@ function scan() {
     errorMsg.value = "query failed: " + (e?.message || String(e));
     status.value = "error";
   }
+}
+
+function selectBranch(id) {
+  if (id === activeBranch.value) return;
+  activeBranch.value = id;
+  scan();
 }
 
 function resetRelays() {
@@ -254,6 +283,24 @@ onBeforeUnmount(stop);
 
     <section class="section">
       <div class="container">
+        <!-- Branch tabs. FIPS `master` and `next` advertise under separate
+             d-tag namespaces because their wire protocols are incompatible,
+             so each tab scans a different overlay. -->
+        <div class="tabs" role="tablist" aria-label="FIPS branch">
+          <button
+            v-for="b in BRANCHES"
+            :key="b.id"
+            class="tab"
+            :class="{ active: activeBranch === b.id }"
+            role="tab"
+            :aria-selected="activeBranch === b.id"
+            @click="selectBranch(b.id)"
+          >
+            <span class="tab-label">{{ b.label }}</span>
+            <span class="tab-hint">{{ b.hint }}</span>
+          </button>
+        </div>
+
         <!-- Compact control bar. Filters collapse by default; the hero CTA is
              the "Scan" button so visitors land on live data immediately. -->
         <div class="bar">
@@ -332,7 +379,7 @@ onBeforeUnmount(stop);
               <input
                 v-model="protocolFilter"
                 type="text"
-                placeholder="fips-overlay-v1"
+                :placeholder="advertD"
               />
             </div>
             <div class="field">
@@ -649,6 +696,52 @@ button.tiny {
   border-top: 1px solid var(--border-subtle);
   display: flex;
   justify-content: flex-end;
+}
+
+/* Branch tabs ----------------------------------------------------------- */
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.tab:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+.tab.active {
+  border-bottom-color: var(--color-app-border);
+}
+.tab-label {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.tab.active .tab-label {
+  color: var(--text-primary);
+}
+.tab-hint {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.tab.active .tab-hint {
+  color: var(--color-app-border);
 }
 
 /* Results bar ----------------------------------------------------------- */
